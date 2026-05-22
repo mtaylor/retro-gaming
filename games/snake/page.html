@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Snake — Retro Gaming</title>
+  <link rel="stylesheet" href="../../css/site.css">
+</head>
+<body class="game-page">
+  <div class="game-toolbar">
+    <a class="back-link" id="back-link" href="../../index.html">&larr; Back to games</a>
+    <span class="score">Score: <span id="score">0</span></span>
+  </div>
+
+  <div class="game-canvas-wrap">
+    <canvas id="game" width="640" height="640" aria-label="Snake game"></canvas>
+  </div>
+
+  <p class="game-hint">Arrow keys or WASD to move &middot; Space or Enter to restart</p>
+
+  <div class="overlay-message" id="overlay">
+    <div class="panel">
+      <h2>Game Over</h2>
+      <p>Press Space or Enter to restart</p>
+    </div>
+  </div>
+
+  <script type="module">
+    import { asset } from '../../js/core/config.js';
+    import { createSnakeGame } from './game.js';
+
+    document.getElementById('back-link').href = asset('index.html');
+
+    const stylesheet = document.querySelector('link[rel="stylesheet"]');
+    if (stylesheet) {
+      stylesheet.setAttribute('href', asset('css/site.css'));
+    }
+
+    const scoreEl = document.getElementById('score');
+    const canvas = document.getElementById('game');
+
+    createSnakeGame(canvas, {
+      onScore(value) {
+        scoreEl.textContent = String(value);
+      },
+    });
+  </script>
+</body>
+</html>

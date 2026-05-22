@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Retro Gaming</title>
+  <link rel="stylesheet" href="css/site.css">
+</head>
+<body>
+  <header class="site-header">
+    <h1>RETRO GAMING</h1>
+    <p>Classic arcade games built with HTML canvas and JavaScript.</p>
+  </header>
+
+  <main>
+    <ul class="game-grid" id="game-grid">
+      <li class="game-card">
+        <h2>Snake</h2>
+        <p>Eat the food, grow longer, and avoid the walls.</p>
+        <a class="play-link" data-game="snake" href="games/snake/page.html">Play</a>
+      </li>
+    </ul>
+  </main>
+
+  <footer class="site-footer">
+    <p>Canvas + JavaScript &middot; Hosted on <a href="https://pages.github.com/" target="_blank" rel="noopener">GitHub Pages</a></p>
+    <p><a id="repo-link" href="https://github.com/mtaylor/retro-gaming" target="_blank" rel="noopener">Source on GitHub</a></p>
+  </footer>
+
+  <script type="module">
+    import { asset } from './js/core/config.js';
+
+    document.querySelectorAll('[data-game]').forEach((link) => {
+      const href = link.getAttribute('href');
+      if (href) {
+        link.setAttribute('href', asset(href.replace(/^\//, '')));
+      }
+    });
+
+    const stylesheet = document.querySelector('link[rel="stylesheet"]');
+    if (stylesheet) {
+      const href = stylesheet.getAttribute('href');
+      if (href && !href.startsWith('http')) {
+        stylesheet.setAttribute('href', asset(href.replace(/^\//, '')));
+      }
+    }
+  </script>
+</body>
+</html>
