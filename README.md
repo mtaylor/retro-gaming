@@ -78,8 +78,6 @@ This repo uses [GitHub Actions](.github/workflows/deploy-pages.yml) to deploy st
    - If you do not see that option, you need **admin** access on the repo (or ask the owner).
 3. Push to `main` (or re-run **Deploy GitHub Pages** under **Actions**).
 
-The workflow also tries to create/switch the Pages site via API before `configure-pages` runs. If that step returns **403**, use the manual Settings step above.
-
 After the workflow succeeds, the site is available at `https://mtaylor.github.io/retro-gaming/`.
 
 ### Who Knocked Over the Plant — Pages + Render
