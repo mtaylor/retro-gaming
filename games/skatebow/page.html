@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Whitley Bay Skatebow — Retro Gaming</title>
+  <link rel="stylesheet" href="skatebow.css" id="game-css">
+  <link rel="stylesheet" href="../../css/site.css" id="site-css">
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js",
+      "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"
+    }
+  }
+  </script>
+</head>
+<body class="game-page skatebow-page">
+  <div class="game-toolbar skatebow-toolbar">
+    <a class="back-link" id="back-link" href="../../index.html">&larr; Back</a>
+    <h1 class="skatebow-title">WHITLEY BAY — SKATE &amp; STONES</h1>
+    <div class="skatebow-stats">
+      <span>Score: <strong id="score">0</strong></span>
+      <span>Chips: <strong id="chips">8</strong></span>
+      <span>Lives: <strong id="lives">3</strong></span>
+      <span>Combo: <strong id="combo">0</strong></span>
+    </div>
+  </div>
+
+  <div id="game-container">
+    <canvas id="game-canvas"></canvas>
+    <div id="crosshair" aria-hidden="true"></div>
+    <div id="hud-message"></div>
+    <div id="player-select" class="skatebow-overlay">
+      <div class="panel select-panel">
+        <h2>Choose your skater</h2>
+        <p class="select-sub">Whitley Bay prom — guard your chips!</p>
+        <div class="character-cards">
+          <button type="button" class="char-card" id="pick-henry" data-character="henry">
+            <canvas class="char-preview" id="preview-henry" width="320" height="384" aria-hidden="true"></canvas>
+            <span class="char-name">Henry</span>
+            <span class="char-tag">Boy</span>
+            <span class="char-detail">Newcastle United kit · orange trainers · curly hair</span>
+          </button>
+          <button type="button" class="char-card" id="pick-eleanor" data-character="eleanor">
+            <canvas class="char-preview" id="preview-eleanor" width="320" height="384" aria-hidden="true"></canvas>
+            <span class="char-name">Eleanor</span>
+            <span class="char-tag">Girl</span>
+            <span class="char-detail">Jeans &amp; t-shirt · long blonde hair</span>
+          </button>
+        </div>
+      </div>
+    </div>
+    <div id="overlay" class="skatebow-overlay hidden">
+      <div class="panel">
+        <h2 id="overlay-title">Game Over</h2>
+        <p id="overlay-text">Press Space to play again</p>
+      </div>
+    </div>
+  </div>
+
+  <p class="game-hint skatebow-hint">
+    <kbd>A</kbd>/<kbd>D</kbd> or <kbd>&larr;</kbd>/<kbd>&rarr;</kbd> dodge &middot;
+    <strong>Click</strong> to throw stones at evil seagulls &middot; Guard your chip packet from swoopers!
+  </p>
+  <script type="module">
+    import { initSkatebow } from './game.js';
+    import {
+      drawSpritePreview,
+      HENRY_SPRITE_REL,
+      ELEANOR_SPRITE_REL,
+    } from './characters.js';
+    import { siteHref, skatebowHref } from './page-assets.js';
+
+    const back = document.getElementById('back-link');
+    if (back) back.href = siteHref('index.html');
+
+    const siteCss = document.getElementById('site-css');
+    if (siteCss) {
+      siteCss.href = siteHref('css/site.css');
+      siteCss.onerror = () => siteCss.remove();
+    }
+
+    const gameCss = document.getElementById('game-css');
+    if (gameCss) gameCss.href = skatebowHref('skatebow.css');
+
+    drawSpritePreview(document.getElementById('preview-henry'), HENRY_SPRITE_REL);
+    drawSpritePreview(document.getElementById('preview-eleanor'), ELEANOR_SPRITE_REL);
+
+    const canvas = document.getElementById('game-canvas');
+    const crosshair = document.getElementById('crosshair');
+    const playerSelect = document.getElementById('player-select');
+    const hudMessage = document.getElementById('hud-message');
+    const ui = {
+      scoreEl: document.getElementById('score'),
+      livesEl: document.getElementById('lives'),
+      comboEl: document.getElementById('combo'),
+      chipsEl: document.getElementById('chips'),
+      messageEl: hudMessage,
+      overlay: document.getElementById('overlay'),
+      overlayTitle: document.getElementById('overlay-title'),
+      overlayText: document.getElementById('overlay-text'),
+    };
+
+    let gameHandle = null;
+    let starting = false;
+
+    async function startGame(character) {
+      if (starting) return;
+      starting = true;
+      try {
+        if (gameHandle?.destroy) gameHandle.destroy();
+        gameHandle = await initSkatebow(canvas, ui, { character });
+        playerSelect?.classList.add('hidden');
+        if (crosshair) crosshair.style.visibility = 'visible';
+      } catch (err) {
+        console.error('Failed to start game', err);
+        playerSelect?.classList.remove('hidden');
+        if (crosshair) crosshair.style.visibility = 'hidden';
+        if (hudMessage) {
+          hudMessage.textContent =
+            `Could not start: ${err?.message || err}. Open DevTools (F12) for details.`;
+        }
+      } finally {
+        starting = false;
+      }
+    }
+
+    if (crosshair) crosshair.style.visibility = 'hidden';
+
+    document.getElementById('pick-henry')?.addEventListener('click', () => startGame('henry'));
+    document.getElementById('pick-eleanor')?.addEventListener('click', () => startGame('eleanor'));
+  </script>
+</body>
+</html>

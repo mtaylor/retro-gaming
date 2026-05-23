@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Who Knocked Over the Plant?</title>
+  <link rel="stylesheet" href="../../css/site.css" id="site-css">
+  <link rel="stylesheet" href="public/css/style.css" id="game-css">
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&family=Nunito:wght@400;600;700&display=swap" rel="stylesheet">
+</head>
+<body class="game-page" style="margin:0;min-height:100vh;background:#1a1020">
+  <p style="margin:0;padding:0.35rem 0.75rem;font-family:system-ui,sans-serif;font-size:0.75rem;text-align:center;background:#281820;color:#a8b8c8">
+    <a id="back-link" href="../../index.html" style="color:#9ed4ff">← Retro Gaming</a>
+    <span id="server-hint" style="display:none"> · Multiplayer via cloud server</span>
+  </p>
+  <div id="app"><p class="loading" style="color:#e8d0c8;padding:2rem;text-align:center;font-family:Nunito,sans-serif">Loading…</p></div>
+  <script src="https://cdn.socket.io/4.8.0/socket.io.min.js" crossorigin="anonymous"></script>
+  <script type="module">
+    import { asset } from '../../js/core/config.js';
+    import { getSocketServerUrl, isStaticHubHost } from './public/js/socket-url.js';
+
+    document.getElementById('back-link').href = asset('index.html');
+    const siteCss = document.getElementById('site-css');
+    if (siteCss) {
+      siteCss.href = asset('css/site.css');
+      siteCss.onerror = () => siteCss.remove();
+    }
+    document.getElementById('game-css').href = new URL('public/css/style.css', import.meta.url).href;
+
+    if (isStaticHubHost() && getSocketServerUrl()) {
+      document.getElementById('server-hint').style.display = 'inline';
+    }
+  </script>
+  <script type="module" src="public/js/client.js"></script>
+</body>
+</html>

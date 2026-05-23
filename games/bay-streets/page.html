@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bay Streets — Retro Gaming</title>
+  <link rel="stylesheet" href="bay-streets.css" id="game-css">
+  <link rel="stylesheet" href="../../css/site.css" id="site-css">
+</head>
+<body class="game-page bay-streets-page">
+  <div class="game-toolbar bay-streets-toolbar">
+    <a class="back-link" id="back-link" href="../../index.html">&larr; Back</a>
+    <h1 class="bay-streets-title">BAY STREETS</h1>
+    <div class="bay-streets-stats">
+      <span>Score: <strong id="score">0</strong></span>
+      <span>Lives: <strong id="lives">3</strong></span>
+    </div>
+  </div>
+
+  <div id="bay-container">
+    <canvas id="bay-canvas" aria-label="Bay Streets beat em up"></canvas>
+    <div id="player-select" class="bay-overlay">
+      <div class="panel">
+        <h2>Pick your fighter</h2>
+        <p>Whitley Bay after dark. Clear the prom of thugs. Side-view sprites coming soon — placeholders active.</p>
+        <div class="character-cards">
+          <button type="button" class="char-card" id="pick-henry">
+            <canvas class="char-preview" id="preview-henry" width="64" height="64"></canvas>
+            <span>Henry</span>
+          </button>
+          <button type="button" class="char-card" id="pick-eleanor">
+            <canvas class="char-preview" id="preview-eleanor" width="64" height="64"></canvas>
+            <span>Eleanor</span>
+          </button>
+        </div>
+      </div>
+    </div>
+    <div id="overlay" class="bay-overlay hidden">
+      <div class="panel">
+        <h2 id="overlay-title">Game Over</h2>
+        <p id="overlay-text">Press Space</p>
+      </div>
+    </div>
+  </div>
+
+  <p class="game-hint bay-hint">
+    Move <kbd>WASD</kbd> &middot; Punch <kbd>Z</kbd>/<kbd>J</kbd> &middot; Kick <kbd>X</kbd>/<kbd>K</kbd>
+    &middot; See <a href="SPRITES.md">SPRITES.md</a> for art spec
+  </p>
+
+  <script type="module">
+    import { siteHref, gameHref } from './page-assets.js';
+    import { createBayStreetsGame } from './game.js';
+    import { loadFighterSprites, drawFighterFrame } from './sprites.js';
+
+    document.getElementById('back-link').href = siteHref('index.html');
+    const siteCss = document.getElementById('site-css');
+    if (siteCss) {
+      siteCss.href = siteHref('css/site.css');
+      siteCss.onerror = () => siteCss.remove();
+    }
+    document.getElementById('game-css').href = gameHref('bay-streets.css');
+
+    async function preview(canvas, folder) {
+      const s = await loadFighterSprites(folder);
+      const f = s.walk.right || s.idle.right;
+      if (!f) return;
+      const scale = 56 / f.height;
+      drawFighterFrame(canvas.getContext('2d'), f, 36, 58, 1, scale, s.foot, false);
+    }
+    preview(document.getElementById('preview-henry'), 'henry');
+    preview(document.getElementById('preview-eleanor'), 'eleanor');
+
+    const canvas = document.getElementById('bay-canvas');
+    const ui = {
+      onScore: (n) => { document.getElementById('score').textContent = n; },
+      onLives: (n) => { document.getElementById('lives').textContent = n; },
+      showOverlay: (t, p) => {
+        document.getElementById('overlay-title').textContent = t;
+        document.getElementById('overlay-text').textContent = p;
+        document.getElementById('overlay').classList.remove('hidden');
+      },
+      hideOverlay: () => document.getElementById('overlay').classList.add('hidden'),
+    };
+
+    let handle = null;
+    async function start(character) {
+      handle?.stop?.();
+      handle = await createBayStreetsGame(canvas, { character, ...ui });
+      handle.start();
+      document.getElementById('player-select').classList.add('hidden');
+    }
+    document.getElementById('pick-henry').onclick = () => start('henry');
+    document.getElementById('pick-eleanor').onclick = () => start('eleanor');
+  </script>
+</body>
+</html>

@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Seagul Sluice — Retro Gaming</title>
+  <link rel="stylesheet" href="seagull-sluice.css" id="game-css">
+  <link rel="stylesheet" href="../../css/site.css" id="site-css">
+</head>
+<body class="game-page seagull-sluice-page">
+  <div class="game-toolbar seagull-sluice-toolbar">
+    <a class="back-link" id="back-link" href="../../index.html">&larr; Back</a>
+    <h1 class="seagull-sluice-title">SEAGUL SLUICE — WHITLEY BAY</h1>
+    <div class="seagull-sluice-stats">
+      <span>Chips: <strong id="chips">5</strong></span>
+    </div>
+  </div>
+
+  <div id="sluice-container" class="seagull-sluice-canvas-wrap">
+    <canvas id="sluice-canvas" aria-label="Seagul Sluice game"></canvas>
+    <div id="player-select" class="seagull-sluice-overlay">
+      <div class="panel select-panel">
+        <h2>Choose your defender</h2>
+        <p>Chip bags are on the prom. Seagull minions are stealing for the boss. Reach the chippy with chips left!</p>
+        <div class="character-cards">
+          <button type="button" class="char-card" id="pick-henry" data-character="henry">
+            <canvas class="char-preview" id="preview-henry" width="128" height="128" aria-hidden="true"></canvas>
+            <span class="char-name">Henry</span>
+            <span class="char-tag">Boy</span>
+          </button>
+          <button type="button" class="char-card" id="pick-eleanor" data-character="eleanor">
+            <canvas class="char-preview" id="preview-eleanor" width="128" height="128" aria-hidden="true"></canvas>
+            <span class="char-name">Eleanor</span>
+            <span class="char-tag">Girl</span>
+          </button>
+        </div>
+      </div>
+    </div>
+    <div id="overlay" class="seagull-sluice-overlay hidden">
+      <div class="panel">
+        <h2 id="overlay-title">Game Over</h2>
+        <p id="overlay-text">Press Space to play again</p>
+      </div>
+    </div>
+  </div>
+
+  <p class="game-hint seagull-sluice-hint">
+    <kbd>WASD</kbd> or arrows to move &middot; Guard chip bags and your lunch &middot; Reach the <strong>CHIPPY</strong> goal
+  </p>
+
+  <script type="module">
+    import { siteHref, gameHref } from './page-assets.js';
+    import { createSeagullSluiceGame } from './game.js';
+    import { loadSpriteSet, drawSprite } from './sprites.js';
+
+    document.getElementById('back-link').href = siteHref('index.html');
+    const siteCss = document.getElementById('site-css');
+    if (siteCss) {
+      siteCss.href = siteHref('css/site.css');
+      siteCss.onerror = () => siteCss.remove();
+    }
+    document.getElementById('game-css').href = gameHref('seagull-sluice.css');
+
+    async function drawPreview(canvas, folder) {
+      const set = await loadSpriteSet(folder);
+      const frame = set.frames.south;
+      const scale = Math.min(72 / frame.width, 96 / frame.height);
+      canvas.width = frame.width * scale;
+      canvas.height = frame.height * scale;
+      const ctx = canvas.getContext('2d');
+      drawSprite(ctx, frame, canvas.width / 2, canvas.height - 4, scale, 'feet');
+    }
+
+    drawPreview(document.getElementById('preview-henry'), 'henry');
+    drawPreview(document.getElementById('preview-eleanor'), 'eleanor');
+
+    const canvas = document.getElementById('sluice-canvas');
+    const playerSelect = document.getElementById('player-select');
+    const overlay = document.getElementById('overlay');
+    const chipsEl = document.getElementById('chips');
+
+    let gameHandle = null;
+    let starting = false;
+
+    const ui = {
+      onChips(n) {
+        chipsEl.textContent = String(n);
+      },
+      showOverlay(title, text) {
+        document.getElementById('overlay-title').textContent = title;
+        document.getElementById('overlay-text').textContent = text;
+        overlay.classList.remove('hidden');
+      },
+      hideOverlay() {
+        overlay.classList.add('hidden');
+      },
+    };
+
+    async function startGame(character) {
+      if (starting) return;
+      starting = true;
+      try {
+        gameHandle?.stop?.();
+        gameHandle = await createSeagullSluiceGame(canvas, { character, ...ui });
+        gameHandle.start();
+        playerSelect.classList.add('hidden');
+      } catch (err) {
+        console.error(err);
+        playerSelect.classList.remove('hidden');
+        alert(`Could not start: ${err.message}`);
+      } finally {
+        starting = false;
+      }
+    }
+
+    document.getElementById('pick-henry')?.addEventListener('click', () => startGame('henry'));
+    document.getElementById('pick-eleanor')?.addEventListener('click', () => startGame('eleanor'));
+  </script>
+</body>
+</html>

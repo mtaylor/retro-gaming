@@ -1,0 +1,17 @@
+# Render Blueprint — https://render.com/docs/blueprint-spec
+# Repo → New → Blueprint → connect mtaylor/retro-gaming (or your fork)
+
+services:
+  - type: web
+    name: who-knocked-over-the-plant
+    runtime: node
+    rootDir: games/who-knocked-over-the-plant
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /health
+    plan: free
+    envVars:
+      - key: NODE_VERSION
+        value: "20"
+      - key: ALLOWED_ORIGINS
+        value: https://mtaylor.github.io

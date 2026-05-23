@@ -1,0 +1,36 @@
+{
+  "group_id": null,
+  "states": [
+    {
+      "character": {
+        "id": "ac23f786-9e10-4212-9f71-1d8f42f02612",
+        "name": "7 year old boy, wearing",
+        "prompt": "7 year old boy, wearing Newcastle United Football Strip, with curly hair and orange trainers.",
+        "size": {
+          "width": 128,
+          "height": 128
+        },
+        "template_id": "mannequin",
+        "directions": 8,
+        "view": "low top-down",
+        "created_at": "2026-05-22T16:25:28.440524+00:00"
+      },
+      "folder": "7_year_old_boy_wearing",
+      "frames": {
+        "rotations": {
+          "south": "7_year_old_boy_wearing/rotations/south.png",
+          "south-east": "7_year_old_boy_wearing/rotations/south-east.png",
+          "east": "7_year_old_boy_wearing/rotations/east.png",
+          "north-east": "7_year_old_boy_wearing/rotations/north-east.png",
+          "north": "7_year_old_boy_wearing/rotations/north.png",
+          "north-west": "7_year_old_boy_wearing/rotations/north-west.png",
+          "west": "7_year_old_boy_wearing/rotations/west.png",
+          "south-west": "7_year_old_boy_wearing/rotations/south-west.png"
+        },
+        "animations": {}
+      }
+    }
+  ],
+  "export_version": "3.0",
+  "export_date": "2026-05-22T16:28:52.026087"
+}

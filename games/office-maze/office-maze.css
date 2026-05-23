@@ -1,0 +1,58 @@
+.office-maze-page {
+  --cambio-red: #ba0020;
+  --office-bg: #f5f3ee;
+}
+
+.office-maze-page .game-toolbar.office-toolbar {
+  flex-wrap: wrap;
+  gap: 0.5rem 1rem;
+  background: var(--office-bg);
+  border-bottom-color: var(--cambio-red);
+}
+
+.office-maze-page .cambio-logo {
+  height: 32px;
+  width: auto;
+  image-rendering: auto;
+}
+
+.office-maze-page .office-stats {
+  display: flex;
+  gap: 1.25rem;
+  margin-left: auto;
+}
+
+.office-maze-page .score,
+.office-maze-page .lives {
+  color: var(--cambio-red);
+}
+
+.office-maze-page .game-canvas-wrap.office-canvas-wrap canvas {
+  width: min(100%, 864px);
+  aspect-ratio: 864 / 532;
+  max-height: calc(100vh - 9rem);
+  border-color: var(--cambio-red);
+  background: #283048;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+}
+
+.office-maze-page .overlay-message .office-panel {
+  border-color: var(--cambio-red);
+  max-width: 22rem;
+}
+
+.office-maze-page .overlay-logo {
+  display: block;
+  margin: 0 auto 1rem;
+  width: 160px;
+  height: auto;
+}
+
+.office-maze-page .overlay-message h2 {
+  color: var(--cambio-red);
+}
+
+.office-maze-page .game-hint strong {
+  color: var(--cambio-red);
+}

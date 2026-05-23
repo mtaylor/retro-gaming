@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cambio Office Maze — Retro Gaming</title>
+  <link rel="stylesheet" href="../../css/site.css">
+  <link rel="stylesheet" href="office-maze.css" id="office-css">
+</head>
+<body class="game-page office-maze-page">
+  <div class="game-toolbar office-toolbar">
+    <a class="back-link" id="back-link" href="../../index.html">&larr; Back to games</a>
+    <img
+      id="cambio-logo"
+      class="cambio-logo"
+      src="assets/cambio-logo.svg"
+      alt="Cambio"
+      width="140"
+      height="38"
+    />
+    <div class="office-stats">
+      <span class="score">Score: <span id="score">0</span></span>
+      <span class="lives">Lives: <span id="lives">3</span></span>
+    </div>
+  </div>
+
+  <div class="game-canvas-wrap office-canvas-wrap">
+    <canvas id="game" width="864" height="532" aria-label="Cambio Office Maze"></canvas>
+  </div>
+
+  <p class="game-hint">
+    Arrow keys / WASD to move &middot; E to mop coffee, fix printer, close laptop &middot;
+    Dodge visiting customers &middot; Reach <strong>FIKA</strong> at the kitchen
+  </p>
+
+  <div class="overlay-message" id="overlay">
+    <div class="panel office-panel">
+      <img src="assets/cambio-logo.svg" alt="Cambio" class="overlay-logo" width="160" height="44" />
+      <h2>Game Over</h2>
+      <p>Press Space or Enter to play again</p>
+    </div>
+  </div>
+
+  <script type="module">
+    import { asset } from '../../js/core/config.js';
+    import { createOfficeMazeGame } from './game.js';
+
+    document.getElementById('back-link').href = asset('index.html');
+
+    document.querySelector('link[href="../../css/site.css"]')?.setAttribute('href', asset('css/site.css'));
+    document.getElementById('office-css')?.setAttribute('href', asset('games/office-maze/office-maze.css'));
+
+    document.getElementById('cambio-logo').src = asset('games/office-maze/assets/cambio-logo.svg');
+    document.querySelector('.overlay-logo').src = asset('games/office-maze/assets/cambio-logo.svg');
+
+    const scoreEl = document.getElementById('score');
+    const livesEl = document.getElementById('lives');
+    const messageEl = document.getElementById('status-message');
+    const canvas = document.getElementById('game');
+
+    createOfficeMazeGame(canvas, {
+      onScore(value) {
+        scoreEl.textContent = String(value);
+      },
+      onLives(value) {
+        livesEl.textContent = String(value);
+      },
+      onMessage(text) {
+        if (messageEl) messageEl.textContent = text;
+      },
+    });
+  </script>
+</body>
+</html>

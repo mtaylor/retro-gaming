@@ -19,9 +19,42 @@ Then open [http://localhost:3000](http://localhost:3000) (serve) or [http://loca
 
 ## Games
 
-| Game  | Path                    |
-|-------|-------------------------|
-| Snake | `games/snake/page.html` |
+| Game               | Path                           |
+|--------------------|--------------------------------|
+| Snake              | `games/snake/page.html`        |
+| Cambio Office Maze | `games/office-maze/page.html`  |
+| Whitley Bay Skatebow | `games/skatebow/page.html`   |
+| Who Knocked Over the Plant? | `games/who-knocked-over-the-plant/page.html` |
+
+### Who Knocked Over the Plant?
+
+Family Cluedo with a board — multiplayer via Socket.io. Each player uses their own device; the host creates the game and shares a join code.
+
+**Online (free):** deploy the Node server to [Render](https://render.com) (see `games/who-knocked-over-the-plant/README.md`). Share the Render URL with players, or wire GitHub Pages via `public/js/deploy-config.js`.
+
+**Local / LAN:**
+
+```bash
+cd games/who-knocked-over-the-plant
+npm install   # first time only
+npm start
+```
+
+Open http://localhost:3456 on each device (use the network URL from the terminal for phones/tablets on the same Wi‑Fi).
+
+### Cambio Office Maze
+
+A top-down office maze set in Cambio’s Stockholm workspace (Sveavägen 44). Visual style follows Cambio’s bright, modern Scandinavian offices and brand red (`#BA0020`). The official Cambio logo is bundled from [cambio.se](https://www.cambio.se/) theme assets for in-game branding.
+
+Verify the level is solvable:
+
+```bash
+node games/office-maze/validate-level.mjs
+```
+
+### Whitley Bay Skatebow
+
+SNES-style 3D runner on **Whitley Bay** — fixed pixel **Spanish City** & **St Mary's Lighthouse**. Skate with **A/D**, **throw stones** at circling **seagulls** (they grow as they close in), and guard your **chip packet** from swooping thieves. Requires WebGL and Three.js from CDN.
 
 ## Adding a new game
 
@@ -39,11 +72,32 @@ This repo uses [GitHub Actions](.github/workflows/deploy-pages.yml) to deploy st
 ### One-time setup
 
 1. Push this repository to `github.com/mtaylor/retro-gaming`.
-2. In the repo on GitHub: **Settings → Pages → Build and deployment**.
-3. Set **Source** to **GitHub Actions**.
-4. Push to `main` (or run the workflow manually under **Actions**).
+2. Enable Pages for **GitHub Actions** (required once per repo):
+   - Open [Settings → Pages](https://github.com/mtaylor/retro-gaming/settings/pages).
+   - Under **Build and deployment**, set **Source** to **GitHub Actions**.
+   - If you do not see that option, you need **admin** access on the repo (or ask the owner).
+3. Push to `main` (or re-run **Deploy GitHub Pages** under **Actions**).
+
+The workflow also tries to create/switch the Pages site via API before `configure-pages` runs. If that step returns **403**, use the manual Settings step above.
 
 After the workflow succeeds, the site is available at `https://mtaylor.github.io/retro-gaming/`.
+
+### Who Knocked Over the Plant — Pages + Render
+
+1. Deploy the Node server via [Render Blueprint](render.yaml) (see `games/who-knocked-over-the-plant/DEPLOY.md`).
+2. Add repository secret **`WKOTP_RENDER_URL`** = your Render service URL (no trailing slash).
+3. Re-run **Deploy GitHub Pages** (or push to `main`). The workflow injects that URL into `deploy-config.js` so the hub `page.html` connects over Socket.io.
+
+Until the secret is set, players can use `page.html?server=https://YOUR-APP.onrender.com` or open the Render URL directly.
+
+### Troubleshooting `configure-pages`: Not Found
+
+This means GitHub Pages is not enabled yet, or the source is not **GitHub Actions** (e.g. still “Deploy from branch”). Fix:
+
+1. [Settings → Pages](https://github.com/mtaylor/retro-gaming/settings/pages) → **Source: GitHub Actions**.
+2. Re-run the workflow.
+
+Also check **Settings → Actions → General → Workflow permissions** is **Read and write** (not read-only).
 
 ### Push from a fresh clone
 

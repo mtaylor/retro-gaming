@@ -1,0 +1,287 @@
+.skatebow-page.game-page {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+.skatebow-page {
+  --sea: #3888a8;
+  --prom: #d8c8a0;
+  --snes-bg: #1a2840;
+  font-family: 'Courier New', Courier, monospace;
+}
+
+.skatebow-page .skatebow-toolbar {
+  flex-wrap: wrap;
+  gap: 0.5rem 1rem;
+  background: linear-gradient(180deg, #284868 0%, var(--snes-bg) 100%);
+  border-bottom: 3px solid #58a8d8;
+}
+
+.skatebow-title {
+  margin: 0;
+  font-size: 1rem;
+  color: #e8f4ff;
+  letter-spacing: 0.06em;
+}
+
+.skatebow-stats {
+  display: flex;
+  gap: 1.25rem;
+  margin-left: auto;
+  font-size: 0.875rem;
+}
+
+.skatebow-stats strong {
+  color: #7ec8ff;
+}
+
+.skatebow-stats span:nth-child(2) strong {
+  color: #ffd080;
+}
+
+#game-container {
+  position: relative;
+  flex: 1;
+  min-height: 360px;
+  background: #b8d0e8;
+  overflow: hidden;
+}
+
+#game-container::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(0, 0, 0, 0.025) 2px,
+    rgba(0, 0, 0, 0.025) 3px
+  );
+  opacity: 0.45;
+}
+
+#game-container::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  box-shadow: inset 0 0 60px rgba(0, 0, 0, 0.28);
+  z-index: 2;
+}
+
+#game-canvas {
+  position: relative;
+  z-index: 1;
+  display: block;
+  width: 100%;
+  height: min(72vh, 640px);
+  touch-action: none;
+  cursor: crosshair;
+  background: #b8d0e8;
+}
+
+#game-canvas.retro-flash {
+  filter: brightness(1.35) contrast(1.1);
+}
+
+#crosshair,
+#hud-message,
+.skatebow-overlay {
+  z-index: 3;
+}
+
+#crosshair {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 8px;
+  height: 8px;
+  margin: -4px 0 0 -4px;
+  pointer-events: none;
+  background: #f8f8ff;
+  box-shadow:
+    0 0 0 2px #283848,
+    -12px 0 0 -10px #f8f8ff,
+    12px 0 0 -10px #f8f8ff,
+    0 -12px 0 -10px #f8f8ff,
+    0 12px 0 -10px #f8f8ff;
+  image-rendering: pixelated;
+}
+
+#hud-message {
+  position: absolute;
+  bottom: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 0.4rem 0.9rem;
+  background: rgba(0, 0, 0, 0.55);
+  color: #e8f4ff;
+  font-family: 'Courier New', monospace;
+  font-size: 0.8rem;
+  border-radius: 4px;
+  pointer-events: none;
+}
+
+.skatebow-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(10, 20, 35, 0.82);
+}
+
+.skatebow-overlay.hidden {
+  display: none;
+}
+
+.skatebow-overlay .panel {
+  background: #1e2d3d;
+  border: 2px solid #5a8ab0;
+  padding: 2rem 2.5rem;
+  text-align: center;
+  max-width: 22rem;
+}
+
+.skatebow-overlay h2 {
+  margin: 0 0 0.5rem;
+  color: #9ed4ff;
+}
+
+.skatebow-overlay p {
+  margin: 0;
+  color: #a8b8c8;
+}
+
+.select-panel {
+  max-width: 78rem;
+  width: 94%;
+}
+
+.select-panel h2 {
+  margin: 0 0 0.35rem;
+  color: #9ed4ff;
+  font-size: 1.25rem;
+}
+
+.select-sub {
+  margin: 0 0 1.25rem !important;
+  font-size: 0.85rem;
+  color: #88a0b8 !important;
+}
+
+.character-cards {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  gap: 1.5rem;
+  justify-content: center;
+  align-items: stretch;
+}
+
+.char-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+  flex: 1 1 0;
+  padding: 1rem 1rem 1.1rem;
+  min-width: 0;
+  max-width: 24rem;
+  background: #243448;
+  border: 3px solid #4a7090;
+  border-radius: 6px;
+  cursor: pointer;
+  font-family: inherit;
+  color: #e8f4ff;
+  transition: border-color 0.15s, transform 0.15s, background 0.15s;
+}
+
+.char-card:hover,
+.char-card:focus-visible {
+  border-color: #7ec8ff;
+  background: #2e4460;
+  transform: scale(1.03);
+  outline: none;
+}
+
+.char-card:active {
+  transform: scale(1);
+}
+
+#pick-henry:hover,
+#pick-henry:focus-visible {
+  border-color: #f0f0f8;
+}
+
+#pick-eleanor:hover,
+#pick-eleanor:focus-visible {
+  border-color: #ffd080;
+}
+
+.char-preview {
+  display: block;
+  width: 105px;
+  height: auto;
+  max-height: 150px;
+  aspect-ratio: auto;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+  background: #243448;
+  border-radius: 4px;
+}
+
+.char-name {
+  font-size: 1.1rem;
+  font-weight: bold;
+  color: #fff8e8;
+  letter-spacing: 0.04em;
+}
+
+.char-tag {
+  font-size: 0.75rem;
+  color: #7ec8ff;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.char-detail {
+  font-size: 0.68rem;
+  line-height: 1.35;
+  color: #98b0c8;
+  text-align: center;
+}
+
+#player-select {
+  z-index: 5;
+}
+
+@media (max-width: 380px) {
+  .character-cards {
+    flex-direction: column;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+
+  .char-card {
+    flex: 0 0 auto;
+    width: 100%;
+    max-width: 27rem;
+  }
+}
+
+.skatebow-credit {
+  font-size: 0.7rem;
+  color: #708898;
+  margin-top: -0.25rem;
+}
+
+.skatebow-hint kbd {
+  padding: 0.1rem 0.35rem;
+  background: #2a3a4a;
+  border-radius: 3px;
+  font-size: 0.75rem;
+}
