@@ -15,7 +15,7 @@ function renderToken(player) {
 export function renderBoard(gameState, privateState, moveOptions) {
   if (!gameState?.board) return '';
 
-  const { cols, rows, cells, startSpots = [] } = gameState.board;
+  const { cols, rows, cells } = gameState.board;
   const players = gameState.players || [];
   const isMyTurn = gameState.currentPlayerId === privateState?.playerId;
 
@@ -31,12 +31,6 @@ export function renderBoard(gameState, privateState, moveOptions) {
       }
     }
   }
-
-  const startNames = new Map();
-  players.forEach((p, i) => {
-    const spot = startSpots.find((s) => s.index === i) ?? startSpots[i];
-    if (spot) startNames.set(spot.index, p.name);
-  });
 
   let gridHtml = '';
   let plantPlaced = false;
@@ -67,11 +61,6 @@ export function renderBoard(gameState, privateState, moveOptions) {
 
       if (cell.roomLabel && cell.roomId) {
         inner += `<span class="room-label">${ROOM_LABELS[cell.roomId] || cell.roomId}</span>`;
-      }
-
-      if (cell.type === 'start' && cell.startIndex != null) {
-        const pname = startNames.get(cell.startIndex) || '';
-        inner += `<span class="start-mark"><span class="start-tag">${cell.startLabel || 'START'}</span>${pname ? `<span class="start-name">${pname}</span>` : ''}</span>`;
       }
 
       const onBoard = players.filter(

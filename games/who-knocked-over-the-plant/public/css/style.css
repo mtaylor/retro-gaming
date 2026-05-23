@@ -12,8 +12,9 @@
   --hall-dark: #a08050;
   --wood: #4e342e;
   --wood-light: #6d4c41;
-  --board-tilt: 56deg;
-  --board-perspective: 720px;
+  /* Steeper overhead view: back of board recedes, tiles stay readable */
+  --board-tilt: 38deg;
+  --board-perspective: 1100px;
   --cluedo-green: #0f5c32;
   --cluedo-green-dark: #0a3d22;
   --cluedo-cream: #f5e6b3;
@@ -198,20 +199,21 @@ body.in-game .game-page { margin: 0 !important; }
   position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 70;
 }
 
-/* Board — vintage Cluedo, low top-down camera */
+/* Board — vintage Cluedo, overhead top-down (vanishing point toward player) */
 .board-wrapper.board-cluedo {
   width: 100%;
-  padding: 0.25rem 0 2.5rem;
+  padding: 0.15rem 0 1.5rem;
   perspective: var(--board-perspective);
-  perspective-origin: 50% 28%;
+  perspective-origin: 50% 88%;
 }
 
 .board-cluedo .board-camera {
   transform: rotateX(var(--board-tilt));
   transform-style: preserve-3d;
-  transform-origin: center center;
+  transform-origin: 50% 42%;
   position: relative;
   width: 100%;
+  max-width: min(100vw, 96vh);
   margin: 0 auto;
 }
 
@@ -229,12 +231,12 @@ body.in-game .game-page { margin: 0 !important; }
 
 .board-cluedo .board-grid-cluedo {
   display: grid;
-  gap: 0;
+  gap: 1px;
   width: 100%;
-  max-width: 100%;
+  max-width: min(100vw - 0.5rem, 94vh);
   margin: 0 auto;
   aspect-ratio: 1;
-  max-height: min(72vh, 100vw);
+  max-height: min(94vh, 100vw);
   position: relative;
   z-index: 1;
   background: var(--cluedo-green-dark);
@@ -257,8 +259,15 @@ body.in-game .game-page { margin: 0 !important; }
   flex-wrap: wrap;
   gap: 1px;
   padding-bottom: 2px;
-  border: 1px solid rgba(0, 0, 0, 0.12);
+  border: 1px solid rgba(42, 24, 16, 0.22);
   transform-style: preserve-3d;
+}
+
+.cell-hall,
+.cell-start,
+.cell-door {
+  outline: 1px solid rgba(42, 24, 16, 0.12);
+  outline-offset: -1px;
 }
 .cell-border {
   background: var(--cluedo-green);
@@ -269,11 +278,25 @@ body.in-game .game-page { margin: 0 !important; }
 .cell-hall,
 .cell-start {
   background: var(--cluedo-cream);
-  box-shadow: inset 0 0 0 1px rgba(42, 24, 16, 0.25);
+  box-shadow: inset 0 0 0 1px rgba(42, 24, 16, 0.3);
 }
 .cell-hall.hall-a,
 .cell-start.hall-a {
   background: var(--cluedo-cream-dark);
+}
+/* Start tiles: subtle red wedge only (no name/START banner on the floor) */
+.cell-start::before {
+  content: '';
+  position: absolute;
+  left: 12%;
+  right: 12%;
+  bottom: 0;
+  height: 38%;
+  background: var(--cluedo-red);
+  border-radius: 50% 50% 0 0;
+  opacity: 0.75;
+  pointer-events: none;
+  z-index: 1;
 }
 .cell-door {
   background: var(--cluedo-cream);
@@ -302,35 +325,6 @@ body.in-game .game-page { margin: 0 !important; }
   transform: rotateX(calc(-1 * var(--board-tilt)));
   filter: drop-shadow(0 4px 4px rgba(0, 0, 0, 0.35));
 }
-.start-mark {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  transform: rotateX(calc(-1 * var(--board-tilt)));
-  transform-origin: center bottom;
-  z-index: 5;
-  pointer-events: none;
-}
-.start-tag {
-  font-family: 'Fredoka', sans-serif;
-  font-size: clamp(0.45rem, 1.2vw, 0.6rem);
-  font-weight: 700;
-  color: #fff;
-  background: var(--cluedo-red);
-  border-radius: 999px 999px 4px 4px;
-  padding: 0.15rem 0.35rem;
-  letter-spacing: 0.04em;
-  box-shadow: 0 2px 0 #5c1010;
-}
-.start-name {
-  font-size: clamp(0.4rem, 1vw, 0.55rem);
-  color: var(--cluedo-ink);
-  font-weight: 700;
-  max-width: 100%;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
 
 .cell.reachable {
   background: #fff176 !important;
@@ -343,16 +337,17 @@ body.in-game .game-page { margin: 0 !important; }
 
 .room-label {
   font-family: 'Fredoka', Georgia, serif;
-  font-size: clamp(0.42rem, 1.4vw, 0.68rem);
+  font-size: clamp(0.5rem, 1.65vw, 0.8rem);
   font-weight: 700;
   text-align: center;
   color: var(--cluedo-ink);
   text-transform: uppercase;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.05em;
   transform: rotateX(calc(-1 * var(--board-tilt)));
   transform-origin: center center;
   line-height: 1.1;
   pointer-events: none;
+  z-index: 2;
 }
 .cell-door.reachable,
 .cell-door.can-enter {
@@ -368,35 +363,37 @@ body.in-game .game-page { margin: 0 !important; }
 .room-living-room { background: #b8cce0; }
 
 .token-sprite {
-  width: clamp(26px, 6.5vw, 48px);
-  height: clamp(32px, 8vw, 56px);
+  width: clamp(44px, 92%, 72px);
+  height: clamp(52px, 115%, 86px);
+  max-width: none;
   object-fit: contain;
   object-position: center bottom;
   image-rendering: pixelated;
-  z-index: 6;
-  filter: drop-shadow(0 4px 2px rgba(0, 0, 0, 0.55));
+  z-index: 8;
+  filter: drop-shadow(0 3px 2px rgba(0, 0, 0, 0.6));
   border-radius: 4px;
-  outline: 2px solid var(--token-ring, #fff);
-  background: rgba(0, 0, 0, 0.12);
-  transform: rotateX(calc(-1 * var(--board-tilt))) translateZ(14px);
+  outline: 3px solid var(--token-ring, #fff);
+  background: rgba(0, 0, 0, 0.08);
+  transform: rotateX(calc(-1 * var(--board-tilt))) translateZ(18px) scale(1.08);
   transform-origin: center bottom;
   transform-style: preserve-3d;
   align-self: flex-end;
+  position: relative;
 }
 
 .token-fallback {
-  width: clamp(18px, 4vw, 28px);
-  height: clamp(18px, 4vw, 28px);
+  width: clamp(32px, 70%, 52px);
+  height: clamp(32px, 70%, 52px);
   border-radius: 50%;
-  font-size: clamp(9px, 2vw, 12px);
+  font-size: clamp(12px, 2.8vw, 16px);
   font-weight: 800;
   color: #fff;
   display: flex;
   align-items: center;
   justify-content: center;
-  border: 2px solid rgba(255, 255, 255, 0.85);
-  z-index: 5;
-  transform: rotateX(calc(-1 * var(--board-tilt))) translateZ(12px);
+  border: 3px solid rgba(255, 255, 255, 0.9);
+  z-index: 8;
+  transform: rotateX(calc(-1 * var(--board-tilt))) translateZ(16px) scale(1.08);
   transform-origin: center bottom;
   align-self: flex-end;
 }
