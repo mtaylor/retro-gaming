@@ -1,10 +1,11 @@
 import {
   createSolution, buildDeck, dealCards, pickFamilyClue,
-  findMatchingCards, getEliminationsFromClue, shuffle, SUSPECTS, PLAYER_COLORS,
+  findMatchingCards, getEliminationsFromClue, shuffle, SUSPECTS, getCharacter,
 } from './data.js';
 import {
   START_POSITIONS, getValidMoves, canEnterRoom, getRoomDoorPosition,
   hasSecretPassage, posKey, getRoomDef, CELLS, COLS, ROWS, ROOM_DEFS,
+  START_SPOTS, SECRET_PASSAGES,
 } from './board.js';
 
 export class GameRoom {
@@ -25,18 +26,25 @@ export class GameRoom {
     this.log = [];
   }
 
-  addPlayer(socketId, name) {
+  addPlayer(socketId, characterId) {
+    const character = getCharacter(characterId);
+    if (!character) return { error: 'Invalid character' };
+    const taken = [...this.players.values()].some((p) => p.characterId === characterId);
+    if (taken) return { error: `${character.name} is already taken` };
+
     const index = this.players.size;
     this.players.set(socketId, {
       id: socketId,
-      name: name.trim() || `Detective ${index + 1}`,
+      characterId: character.id,
+      name: character.name,
       index,
       hand: [],
       position: null,
       inRoom: null,
       eliminated: false,
-      color: PLAYER_COLORS[index],
+      color: character.color,
     });
+    return { ok: true };
   }
 
   removePlayer(socketId) {
@@ -47,6 +55,7 @@ export class GameRoom {
     return [...this.players.values()].map(p => ({
       id: p.id,
       name: p.name,
+      characterId: p.characterId,
       index: p.index,
       color: p.color,
       eliminated: p.eliminated,
@@ -66,11 +75,11 @@ export class GameRoom {
   }
 
   canStart() {
-    return this.players.size >= 2 && this.players.size <= 6 && this.status === 'lobby';
+    return this.players.size >= 2 && this.players.size <= 5 && this.status === 'lobby';
   }
 
   start() {
-    if (!this.canStart()) return { error: 'Need 2–6 players to start' };
+    if (!this.canStart()) return { error: 'Need 2–5 players to start' };
 
     this.solution = createSolution();
     const deck = buildDeck(this.solution);
@@ -117,7 +126,7 @@ export class GameRoom {
     if (player.inRoom) {
       // Can stay or use secret passage
       const options = [{ type: 'stay', roomId: player.inRoom }];
-      for (const [a, b] of [['kitchen', 'living-room'], ['henrys-bedroom', 'utility-room']]) {
+      for (const [a, b] of SECRET_PASSAGES) {
         if (player.inRoom === a) options.push({ type: 'secret', roomId: b });
         if (player.inRoom === b) options.push({ type: 'secret', roomId: a });
       }
@@ -348,7 +357,7 @@ export class GameRoom {
         : null,
       winner: this.winner ? { name: this.winner.name, id: this.winner.id } : null,
       log: this.log.slice(-8),
-      board: { cols: COLS, rows: ROWS, rooms: ROOM_DEFS, cells: CELLS },
+      board: { cols: COLS, rows: ROWS, rooms: ROOM_DEFS, cells: CELLS, startSpots: START_SPOTS },
     };
   }
 

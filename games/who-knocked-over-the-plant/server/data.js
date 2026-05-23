@@ -1,11 +1,16 @@
 export const SUSPECTS = [
-  { id: 'dad', name: 'Dad', emoji: '👨', color: '#e53935' },
-  { id: 'mam', name: 'Mam', emoji: '👩', color: '#1e88e5' },
-  { id: 'eleanor', name: 'Eleanor', emoji: '👧', color: '#ec407a' },
-  { id: 'henry', name: 'Henry', emoji: '👦', color: '#43a047' },
-  { id: 'buttons', name: 'Buttons', emoji: '🐾', color: '#fb8c00' },
-  { id: 'joanna', name: 'Joanna', emoji: '🤖', color: '#8e24aa' },
+  { id: 'dad', name: 'Dad', emoji: '👨', color: '#c62828' },
+  { id: 'mam', name: 'Mam', emoji: '👩', color: '#1565c0' },
+  { id: 'henry', name: 'Henry', emoji: '👦', color: '#2e7d32' },
+  { id: 'eleanor', name: 'Eleanor', emoji: '👧', color: '#ad1457' },
+  { id: 'cleaner', name: 'Cleaner', emoji: '🧹', color: '#6a1b9a' },
 ];
+
+export const CHARACTERS = SUSPECTS;
+
+export function getCharacter(id) {
+  return CHARACTERS.find((c) => c.id === id);
+}
 
 export const ITEMS = [
   { id: 'tennis-ball', name: 'Tennis Ball', emoji: '🎾' },
@@ -32,11 +37,11 @@ export const FAMILY_CLUES = [
   { text: '🌱 Mam heard a loud THWACK from upstairs!', eliminates: { type: 'room', ids: ['kitchen', 'living-room', 'utility-room'] } },
   { text: '🌱 Dad\'s coffee was still warm — it happened recently!', eliminates: null },
   { text: '🌱 Paw prints near the plant — but whose paws?', eliminates: null },
-  { text: '🌱 Joanna was charging in the Utility Room. Or was she?', eliminates: { type: 'suspect', ids: ['joanna'] } },
+  { text: '🌱 The Cleaner\'s mop was wet — Utility Room again?', eliminates: { type: 'suspect', ids: ['cleaner'] } },
   { text: '🌱 A tennis ball behind the sofa — probably not the weapon.', eliminates: { type: 'item', ids: ['tennis-ball'] } },
   { text: '🌱 Henry swears he was reading. Eleanor disagrees.', eliminates: null },
   { text: '🌱 The frying pan has a suspicious dent.', eliminates: null },
-  { text: '🌱 Buttons has soil on his nose. Guilty paws?', eliminates: null },
+  { text: '🌱 Someone tracked mud from the garden — but who?', eliminates: null },
   { text: '🌱 Eleanor\'s door was shut. Very shut. Too shut.', eliminates: null },
 ];
 

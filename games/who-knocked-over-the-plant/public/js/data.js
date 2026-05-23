@@ -1,11 +1,6 @@
-export const SUSPECTS = [
-  { id: 'dad', name: 'Dad', emoji: '👨' },
-  { id: 'mam', name: 'Mam', emoji: '👩' },
-  { id: 'eleanor', name: 'Eleanor', emoji: '👧' },
-  { id: 'henry', name: 'Henry', emoji: '👦' },
-  { id: 'buttons', name: 'Buttons', emoji: '🐾' },
-  { id: 'joanna', name: 'Joanna', emoji: '🤖' },
-];
+import { CHARACTERS } from './characters.js';
+
+export const SUSPECTS = CHARACTERS.map((c) => ({ id: c.id, name: c.name, emoji: c.emoji }));
 
 export const ITEMS = [
   { id: 'tennis-ball', name: 'Tennis Ball', emoji: '🎾' },
@@ -26,7 +21,7 @@ export const ROOMS = [
 ];
 
 export const ROOM_LABELS = {
-  'kitchen': 'Kitchen',
+  kitchen: 'Kitchen',
   'living-room': 'Living Rm',
   'eleanors-bedroom': 'Eleanor',
   'henrys-bedroom': 'Henry',
@@ -36,11 +31,11 @@ export const ROOM_LABELS = {
 
 export function getCardLabel(card) {
   const map = { suspect: SUSPECTS, item: ITEMS, room: ROOMS };
-  const e = map[card?.type]?.find(x => x.id === card?.id);
+  const e = map[card?.type]?.find((x) => x.id === card?.id);
   return e ? `${e.emoji} ${e.name}` : '';
 }
 
 export function findEntry(type, id) {
   const map = { suspect: SUSPECTS, item: ITEMS, room: ROOMS };
-  return map[type]?.find(x => x.id === id);
+  return map[type]?.find((x) => x.id === id);
 }

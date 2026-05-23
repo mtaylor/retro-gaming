@@ -1,5 +1,6 @@
 /* global io */
 import { SUSPECTS, ITEMS, ROOMS, getCardLabel, findEntry } from './data.js';
+import { CHARACTERS, characterSpriteUrl, getCharacter } from './characters.js';
 import { renderBoard } from './boardView.js';
 import { getSocketServerUrl, isStaticHubHost } from './socket-url.js';
 
@@ -37,6 +38,9 @@ let gameState = null;
 let privateState = null;
 let moveOptions = null;
 let screen = 'welcome';
+let pendingMode = null;
+let pendingCode = '';
+let notebookOpen = false;
 let notebook = { suspects: {}, items: {}, rooms: {} };
 let revealedCard = null;
 let modal = null;
@@ -95,12 +99,22 @@ socket.on('connect', () => {
   connectionError = null;
   const session = loadSession();
   if (session?.code && session?.playerId) {
-    socket.emit('rejoin-game', { code: session.code, playerId: session.playerId, name: session.name }, (res) => {
+    socket.emit('rejoin-game', {
+      code: session.code,
+      playerId: session.playerId,
+      characterId: session.characterId,
+    }, (res) => {
       if (res.error) {
         clearSession();
         screen = 'welcome';
       } else {
-        saveSession({ code: res.code, playerId: res.playerId, name: session.name, isHost: res.isHost });
+        saveSession({
+          code: res.code,
+          playerId: res.playerId,
+          characterId: session.characterId,
+          name: session.name,
+          isHost: res.isHost,
+        });
         screen = 'lobby';
       }
       render();
@@ -158,28 +172,71 @@ window.notebook = { toggle: toggleNote };
 
 window.gameActions = {
   createGame() {
-    const name = document.getElementById('name-input')?.value?.trim() || 'Detective';
-    socket.emit('create-game', { name }, (res) => {
-      if (res.error) return alert(res.error);
-      saveSession({ code: res.code, playerId: res.playerId, name, isHost: true });
-      applyPrivateState({ playerId: res.playerId, isHost: true, hand: [], eliminations: [] });
-      gameState = { code: res.code, status: 'lobby', hostId: res.playerId, players: [{ id: res.playerId, name, color: '#ef5350' }] };
-      screen = 'lobby';
-      render();
-    });
+    pendingMode = 'create';
+    pendingCode = '';
+    screen = 'character';
+    render();
   },
 
   joinGame() {
-    const name = document.getElementById('name-input')?.value?.trim() || 'Detective';
     const code = document.getElementById('code-input')?.value?.trim().toUpperCase() || '';
     if (!code) return alert('Enter a game code');
-    socket.emit('join-game', { code, name }, (res) => {
-      if (res.error) return alert(res.error);
-      saveSession({ code: res.code, playerId: res.playerId, name, isHost: false });
-      applyPrivateState({ playerId: res.playerId, isHost: false, hand: [], eliminations: [] });
-      screen = 'lobby';
-      render();
-    });
+    pendingMode = 'join';
+    pendingCode = code;
+    screen = 'character';
+    render();
+  },
+
+  pickCharacter(characterId) {
+    const ch = getCharacter(characterId);
+    if (!ch) return;
+
+    if (pendingMode === 'create') {
+      socket.emit('create-game', { characterId }, (res) => {
+        if (res.error) return alert(res.error);
+        saveSession({
+          code: res.code,
+          playerId: res.playerId,
+          characterId,
+          name: ch.name,
+          isHost: true,
+        });
+        applyPrivateState({ playerId: res.playerId, isHost: true, hand: [], eliminations: [] });
+        pendingMode = null;
+        screen = 'lobby';
+        render();
+      });
+      return;
+    }
+
+    if (pendingMode === 'join') {
+      socket.emit('join-game', { code: pendingCode, characterId }, (res) => {
+        if (res.error) return alert(res.error);
+        saveSession({
+          code: res.code,
+          playerId: res.playerId,
+          characterId,
+          name: ch.name,
+          isHost: false,
+        });
+        applyPrivateState({ playerId: res.playerId, isHost: false, hand: [], eliminations: [] });
+        pendingMode = null;
+        screen = 'lobby';
+        render();
+      });
+    }
+  },
+
+  cancelCharacterPick() {
+    pendingMode = null;
+    pendingCode = '';
+    screen = 'welcome';
+    render();
+  },
+
+  toggleNotebook() {
+    notebookOpen = !notebookOpen;
+    render();
   },
 
   startGame() {
@@ -313,12 +370,15 @@ function nbSection(title, items, type, key) {
     <div class="nb-section">
       <h4>${title}</h4>
       <div class="nb-grid">
-        ${items.map(item => `
+        ${items.map((item) => {
+          const sprite = type === 'suspect' ? characterSpriteUrl(item.id) : '';
+          return `
           <button type="button" class="nb-cell ${notebook[key][item.id]}"
             onclick="window.notebook.toggle('${type}','${item.id}')">
-            <span>${item.emoji}</span>
+            ${sprite ? `<img src="${sprite}" alt="" class="nb-sprite">` : `<span>${item.emoji}</span>`}
             <small>${item.name.split(' ')[0]}</small>
-          </button>`).join('')}
+          </button>`;
+        }).join('')}
       </div>
     </div>`;
 }
@@ -333,6 +393,31 @@ function renderNotebook() {
     </div>`;
 }
 
+function renderCharacterCard(character, taken) {
+  const src = characterSpriteUrl(character.id);
+  return `
+    <button type="button" class="char-card ${taken ? 'taken' : ''}" ${taken ? 'disabled' : ''}
+      onclick="window.gameActions.pickCharacter('${character.id}')">
+      ${src ? `<img src="${src}" alt="${character.name}" class="char-sprite">` : `<span class="char-emoji">${character.emoji}</span>`}
+      <span class="char-name">${character.name}</span>
+      ${taken ? '<span class="char-taken">Taken</span>' : ''}
+    </button>`;
+}
+
+function renderCharacterSelect() {
+  const takenIds = new Set((gameState?.players || []).map((p) => p.characterId));
+  return `
+    <div class="screen character-select">
+      <div class="hero-plant">🪴</div>
+      <h1>Choose your character</h1>
+      <p class="sub">${pendingMode === 'join' ? `Joining game ${pendingCode}` : 'Creating a new game'} — pick who you are</p>
+      <div class="char-grid">
+        ${CHARACTERS.map((c) => renderCharacterCard(c, takenIds.has(c.id))).join('')}
+      </div>
+      <button type="button" class="btn btn-ghost btn-block" onclick="window.gameActions.cancelCharacterPick()">← Back</button>
+    </div>`;
+}
+
 function renderWelcome() {
   return `
     <div class="screen welcome">
@@ -341,15 +426,14 @@ function renderWelcome() {
       <p class="sub">Cluedo with a family twist — each device is one player</p>
       ${connectionError ? `<p class="error-msg">${connectionError}</p>` : ''}
       <div class="panel">
-        <label>Your name<input id="name-input" type="text" placeholder="Dad, Eleanor..." maxlength="20"></label>
         <button type="button" class="btn btn-primary btn-block" onclick="window.gameActions.createGame()">Create Game</button>
         <div class="divider">or join with code</div>
         <label>Game code<input id="code-input" type="text" placeholder="ABCD" maxlength="4" style="text-transform:uppercase"></label>
         <button type="button" class="btn btn-secondary btn-block" onclick="window.gameActions.joinGame()">Join Game</button>
       </div>
       <div class="rules">
-        <p>👑 Whoever creates the game is the host — they start and end it</p>
-        <p>📱 Each player opens this page on their own device</p>
+        <p>👑 Host creates the game and picks a character first</p>
+        <p>📱 Dad, Mam, Henry, Eleanor, or the Cleaner — one per device</p>
       </div>
     </div>`;
 }
@@ -363,9 +447,15 @@ function renderLobby() {
       <div class="code-display">${gameState?.code || '...'}</div>
       <p class="sub">${isHost ? 'Share this code so others can join' : 'Waiting for the host...'}</p>
       <ul class="player-list">
-        ${players.map(p => `<li><span class="pdot" style="background:${p.color}"></span>${p.name}${p.id === gameState.hostId ? ' 👑 host' : ''}</li>`).join('')}
+        ${players.map((p) => {
+          const src = characterSpriteUrl(p.characterId);
+          return `<li>
+            ${src ? `<img class="lobby-sprite" src="${src}" alt="">` : `<span class="pdot" style="background:${p.color}"></span>`}
+            <span>${p.name}${p.id === gameState.hostId ? ' 👑 host' : ''}</span>
+          </li>`;
+        }).join('')}
       </ul>
-      <p>${players.length}/6 players</p>
+      <p>${players.length}/5 players</p>
       ${isHost ? `
         <button type="button" class="btn btn-primary btn-block" onclick="window.gameActions.startGame()" ${players.length < 2 ? 'disabled' : ''}>Start Game</button>
         <button type="button" class="btn btn-danger btn-block" onclick="window.gameActions.endGame()">Cancel Game</button>
@@ -386,32 +476,41 @@ function renderGame() {
   const canRoll = isMyTurn && gameState.diceRoll === null && !me?.eliminated;
   const canSuggest = isMyTurn && me?.inRoom && gameState.hasMoved && !gameState.hasSuggested;
 
+  const drawerOpen = notebookOpen ? 'open' : '';
+
   return `
     <div class="screen game-layout">
       <header class="game-header">
         <span class="code-badge">${gameState.code}</span>
         <span class="turn-info">${isMyTurn ? '🟢 Your turn' : `⏳ ${currentName}'s turn`}</span>
         ${gameState.diceRoll ? `<span class="dice-badge">🎲 ${gameState.diceRoll}</span>` : ''}
-        ${isHost ? `<button type="button" class="btn btn-sm btn-danger" onclick="window.gameActions.endGame()">End Game</button>` : ''}
+        <button type="button" class="btn btn-sm btn-notebook-toggle" onclick="window.gameActions.toggleNotebook()" aria-expanded="${notebookOpen}">
+          📓 ${notebookOpen ? 'Hide' : 'Notebook'}
+        </button>
+        ${isHost ? `<button type="button" class="btn btn-sm btn-danger" onclick="window.gameActions.endGame()">End</button>` : ''}
       </header>
       ${gameState.familyClue ? `<div class="clue-bar">${gameState.familyClue.text}</div>` : ''}
-      <div class="game-main">
+      <div class="game-stage">
         <div class="board-panel">${renderBoard(gameState, privateState, moveOptions)}</div>
-        <aside class="side-panel">
+        <div class="game-bar">
+          <div class="hand-compact">
+            <span class="hand-label">Cards:</span>
+            ${(privateState?.hand || []).map((c) => `<span class="card-chip">${getCardLabel(c)}</span>`).join('') || '<span class="muted">—</span>'}
+          </div>
+          <div class="actions actions-inline">
+            ${canRoll ? `<button type="button" class="btn btn-primary btn-sm" onclick="window.gameActions.rollDice()">Roll 🎲</button>` : ''}
+            ${isMyTurn && gameState.diceRoll && !gameState.hasMoved && !moveOptions ? `<button type="button" class="btn btn-secondary btn-sm" onclick="window.gameActions.refreshMoves()">Moves</button>` : ''}
+            ${canSuggest ? `<button type="button" class="btn btn-primary btn-sm" onclick="window.gameActions.openSuggest()">Suggest</button>` : ''}
+            ${!me?.eliminated ? `<button type="button" class="btn btn-danger btn-sm" onclick="window.gameActions.openAccuse()">Accuse</button>` : ''}
+            ${isMyTurn ? `<button type="button" class="btn btn-ghost btn-sm" onclick="window.gameActions.endTurn()">End turn</button>` : ''}
+          </div>
+        </div>
+        <aside class="notebook-drawer ${drawerOpen}" aria-hidden="${!notebookOpen}">
+          <button type="button" class="drawer-close" onclick="window.gameActions.toggleNotebook()" aria-label="Close notebook">×</button>
           ${renderNotebook()}
-          <div class="hand">
-            <h4>Your cards</h4>
-            <div class="hand-chips">${(privateState?.hand || []).map(c => `<span class="card-chip">${getCardLabel(c)}</span>`).join('')}</div>
-          </div>
-          <div class="actions">
-            ${canRoll ? `<button type="button" class="btn btn-primary btn-block" onclick="window.gameActions.rollDice()">Roll Dice 🎲</button>` : ''}
-            ${isMyTurn && gameState.diceRoll && !gameState.hasMoved && !moveOptions ? `<button type="button" class="btn btn-secondary btn-block" onclick="window.gameActions.refreshMoves()">Show Moves</button>` : ''}
-            ${canSuggest ? `<button type="button" class="btn btn-primary btn-block" onclick="window.gameActions.openSuggest()">Suggest 🔍</button>` : ''}
-            ${!me?.eliminated ? `<button type="button" class="btn btn-danger btn-block" onclick="window.gameActions.openAccuse()">Accuse ⚖️</button>` : ''}
-            ${isMyTurn ? `<button type="button" class="btn btn-ghost btn-block" onclick="window.gameActions.endTurn()">End Turn</button>` : ''}
-          </div>
-          <div class="log">${(gameState.log || []).map(l => `<p>${l}</p>`).join('')}</div>
+          <div class="log">${(gameState.log || []).slice(-8).map((l) => `<p>${l}</p>`).join('')}</div>
         </aside>
+        ${notebookOpen ? '<div class="drawer-backdrop" onclick="window.gameActions.toggleNotebook()"></div>' : ''}
       </div>
       ${renderModal()}
     </div>`;
@@ -454,7 +553,18 @@ function renderEnded() {
 
 function render() {
   try {
-    const screens = { welcome: renderWelcome, lobby: renderLobby, game: renderGame, ended: renderEnded };
+    const screens = {
+      welcome: renderWelcome,
+      character: renderCharacterSelect,
+      lobby: renderLobby,
+      game: renderGame,
+      ended: renderEnded,
+    };
+    if (screen === 'game') {
+      document.body.classList.add('in-game');
+    } else {
+      document.body.classList.remove('in-game');
+    }
     let html = (screens[screen] || renderWelcome)();
     html = html.replace(/<\/?motion-div[^>]*>/g, t => t.startsWith('</') ? '</div>' : '<div>');
     app.innerHTML = html;

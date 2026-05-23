@@ -5,6 +5,7 @@ import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 import os from 'os';
 import { createGame, getGame, findGameByPlayer, removeGame } from './gameEngine.js';
+import { getCharacter } from './data.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const app = express();
@@ -55,36 +56,48 @@ function getLocalIp() {
 }
 
 io.on('connection', (socket) => {
-  socket.on('create-game', ({ name }, cb) => {
+  socket.on('create-game', ({ characterId }, cb) => {
     if (findGameByPlayer(socket.id)) return cb?.({ error: 'Already in a game' });
     const game = createGame(socket.id);
-    game.addPlayer(socket.id, name);
+    const added = game.addPlayer(socket.id, characterId);
+    if (added?.error) return cb?.(added);
     socket.join(game.code);
-    cb?.({ ok: true, code: game.code, playerId: socket.id, isHost: true });
+    cb?.({ ok: true, code: game.code, playerId: socket.id, isHost: true, characterId });
     broadcastGame(game);
   });
 
-  socket.on('join-game', ({ code, name }, cb) => {
+  socket.on('join-game', ({ code, characterId }, cb) => {
     if (findGameByPlayer(socket.id)) return cb?.({ error: 'Already in a game' });
-    const game = getGame(code);
+    const game = getGame(code?.trim()?.toUpperCase());
     if (!game) return cb?.({ error: 'Game not found' });
     if (game.status !== 'lobby') return cb?.({ error: 'Game already started' });
-    if (game.players.size >= 6) return cb?.({ error: 'Game is full' });
-    game.addPlayer(socket.id, name);
+    if (game.players.size >= 5) return cb?.({ error: 'Game is full' });
+    const added = game.addPlayer(socket.id, characterId);
+    if (added?.error) return cb?.(added);
     socket.join(game.code);
-    cb?.({ ok: true, code: game.code, playerId: socket.id, isHost: false });
+    cb?.({ ok: true, code: game.code, playerId: socket.id, isHost: false, characterId });
     broadcastGame(game);
   });
 
-  socket.on('rejoin-game', ({ code, playerId, name }, cb) => {
-    const game = getGame(code);
+  socket.on('rejoin-game', ({ code, playerId, characterId }, cb) => {
+    const game = getGame(code?.trim()?.toUpperCase());
     if (!game) return cb?.({ error: 'Game not found' });
     const existing = game.players.get(playerId);
     if (!existing) return cb?.({ error: 'Session expired' });
 
     game.players.delete(playerId);
     existing.id = socket.id;
-    if (name?.trim()) existing.name = name.trim();
+    if (characterId && getCharacter(characterId)) {
+      const taken = [...game.players.values()].some(
+        (p) => p.characterId === characterId && p.id !== socket.id
+      );
+      if (!taken) {
+        const ch = getCharacter(characterId);
+        existing.characterId = ch.id;
+        existing.name = ch.name;
+        existing.color = ch.color;
+      }
+    }
     game.players.set(socket.id, existing);
     if (game.hostId === playerId) game.hostId = socket.id;
     socket.join(game.code);
