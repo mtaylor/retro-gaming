@@ -23,14 +23,18 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # secrets.* cannot be used in step if: — check inside the script instead
       - name: Inject multiplayer server URL (Who Knocked Over the Plant)
-        if: ${{ secrets.WKOTP_RENDER_URL != '' }}
         env:
           WKOTP_RENDER_URL: ${{ secrets.WKOTP_RENDER_URL }}
         run: |
+          if [ -z "${WKOTP_RENDER_URL:-}" ]; then
+            echo "WKOTP_RENDER_URL not set; using deploy-config.js from the repo."
+            exit 0
+          fi
           FILE=games/who-knocked-over-the-plant/public/js/deploy-config.js
           ESCAPED=$(printf '%s' "$WKOTP_RENDER_URL" | sed "s/'/'\\\\''/g")
-          sed -i.bak "s|export const REMOTE_SERVER_URL = '';|export const REMOTE_SERVER_URL = '${ESCAPED}';|" "$FILE"
+          sed -i.bak "s|export const REMOTE_SERVER_URL = '[^']*';|export const REMOTE_SERVER_URL = '${ESCAPED}';|" "$FILE"
           rm -f "${FILE}.bak"
 
       # Pages must exist with build_type "workflow" before configure-pages runs.
