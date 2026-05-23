@@ -90,14 +90,10 @@ Until the secret is set, players can use `page.html?server=https://YOUR-APP.onre
 
 ### Troubleshooting `configure-pages`: Not Found
 
-GitHub Pages is not enabled yet (or the workflow token cannot create it). **You must do this once in the browser** — the API often returns 403 until Pages has been turned on manually:
+Pages was already working with the original workflow; this usually means the deploy job was changed (split jobs, API bootstrap, or action major versions). The workflow in this repo is back to the simple **single-job** layout. If it still fails:
 
-1. [Settings → Pages](https://github.com/mtaylor/retro-gaming/settings/pages)
-2. **Build and deployment** → **Source** → **GitHub Actions**
-3. [Settings → Actions → General](https://github.com/mtaylor/retro-gaming/settings/actions) → **Workflow permissions** → **Read and write**
-4. Re-run **Deploy GitHub Pages** under Actions
-
-After step 1–2, the workflow’s `configure-pages` step should succeed on the next run.
+1. [Settings → Pages](https://github.com/mtaylor/retro-gaming/settings/pages) → **Source: GitHub Actions**
+2. Re-run **Deploy GitHub Pages**
 
 ### Push from a fresh clone
 
