@@ -181,10 +181,28 @@ window.gameActions = {
   joinGame() {
     const code = document.getElementById('code-input')?.value?.trim().toUpperCase() || '';
     if (!code) return alert('Enter a game code');
-    pendingMode = 'join';
-    pendingCode = code;
-    screen = 'character';
-    render();
+    window.gameActions.openJoinWithCode(code);
+  },
+
+  joinTestGame() {
+    window.gameActions.openJoinWithCode('TEST');
+  },
+
+  openJoinWithCode(code) {
+    socket.emit('peek-lobby', { code }, (res) => {
+      if (res.error) return alert(res.error);
+      gameState = {
+        code: res.code,
+        status: res.status,
+        hostId: res.hostId,
+        players: res.players || [],
+        isTest: res.isTest,
+      };
+      pendingMode = 'join';
+      pendingCode = res.code;
+      screen = 'character';
+      render();
+    });
   },
 
   pickCharacter(characterId) {
@@ -219,7 +237,12 @@ window.gameActions = {
           name: ch.name,
           isHost: false,
         });
-        applyPrivateState({ playerId: res.playerId, isHost: false, hand: [], eliminations: [] });
+        applyPrivateState({
+          playerId: res.playerId,
+          isHost: res.isHost ?? false,
+          hand: [],
+          eliminations: [],
+        });
         pendingMode = null;
         screen = 'lobby';
         render();
@@ -246,9 +269,19 @@ window.gameActions = {
 
   endGame() {
     if (!privateState?.isHost) return alert('Only the host can end the game');
-    if (!confirm('End this game for everyone?')) return;
+    const msg = gameState?.isTest
+      ? 'Reset test game to lobby?'
+      : 'End this game for everyone?';
+    if (!confirm(msg)) return;
     socket.emit('end-game', {}, (res) => {
       if (res.error) return alert(res.error);
+      if (res.reset || gameState?.isTest) {
+        moveOptions = null;
+        modal = null;
+        screen = 'lobby';
+        render();
+        return;
+      }
       clearSession();
       gameState = null;
       privateState = null;
@@ -260,7 +293,8 @@ window.gameActions = {
   },
 
   leaveGame() {
-    socket.emit('leave-game', {}, () => {
+    socket.emit('leave-game', {}, (res) => {
+      if (res?.error) return alert(res.error);
       clearSession();
       gameState = null;
       privateState = null;
@@ -410,7 +444,7 @@ function renderCharacterSelect() {
     <div class="screen character-select">
       <div class="hero-plant">🪴</div>
       <h1>Choose your character</h1>
-      <p class="sub">${pendingMode === 'join' ? `Joining game ${pendingCode}` : 'Creating a new game'} — pick who you are</p>
+      <p class="sub">${pendingMode === 'join' ? `Joining ${pendingCode}${gameState?.isTest ? ' (test — solo OK)' : ''}` : 'Creating a new game'} — pick who you are</p>
       <div class="char-grid">
         ${CHARACTERS.map((c) => renderCharacterCard(c, takenIds.has(c.id))).join('')}
       </div>
@@ -430,10 +464,12 @@ function renderWelcome() {
         <div class="divider">or join with code</div>
         <label>Game code<input id="code-input" type="text" placeholder="ABCD" maxlength="4" style="text-transform:uppercase"></label>
         <button type="button" class="btn btn-secondary btn-block" onclick="window.gameActions.joinGame()">Join Game</button>
+        <div class="divider">try the board</div>
+        <button type="button" class="btn btn-ghost btn-block test-game-btn" onclick="window.gameActions.joinTestGame()">Join test game (code TEST)</button>
       </div>
       <div class="rules">
-        <p>👑 Host creates the game and picks a character first</p>
-        <p>📱 Dad, Mam, Henry, Eleanor, or the Cleaner — one per device</p>
+        <p>🧪 <strong>Test game</strong> — open in one tab, pick a character, start solo to walk the board</p>
+        <p>👑 Or create a private game and share your code with family</p>
       </div>
     </div>`;
 }
@@ -441,11 +477,14 @@ function renderWelcome() {
 function renderLobby() {
   const players = gameState?.players || [];
   const isHost = privateState?.isHost;
+  const isTest = gameState?.isTest;
+  const minPlayers = isTest ? 1 : 2;
   return `
     <div class="screen lobby">
-      <h2>${isHost ? '👑 Your Game' : 'Game Lobby'}</h2>
+      <h2>${isTest ? '🧪 Test Game' : isHost ? '👑 Your Game' : 'Game Lobby'}</h2>
       <div class="code-display">${gameState?.code || '...'}</div>
-      <p class="sub">${isHost ? 'Share this code so others can join' : 'Waiting for the host...'}</p>
+      ${isTest ? '<p class="test-badge">Anyone can join · solo start allowed · always open</p>' : ''}
+      <p class="sub">${isHost ? (isTest ? 'Start alone to test the board, or wait for others' : 'Share this code so others can join') : 'Waiting for the host...'}</p>
       <ul class="player-list">
         ${players.map((p) => {
           const src = characterSpriteUrl(p.characterId);
@@ -457,8 +496,9 @@ function renderLobby() {
       </ul>
       <p>${players.length}/5 players</p>
       ${isHost ? `
-        <button type="button" class="btn btn-primary btn-block" onclick="window.gameActions.startGame()" ${players.length < 2 ? 'disabled' : ''}>Start Game</button>
-        <button type="button" class="btn btn-danger btn-block" onclick="window.gameActions.endGame()">Cancel Game</button>
+        <button type="button" class="btn btn-primary btn-block" onclick="window.gameActions.startGame()" ${players.length < minPlayers ? 'disabled' : ''}>Start Game</button>
+        <button type="button" class="btn btn-danger btn-block" onclick="window.gameActions.endGame()">${isTest ? 'Reset to lobby' : 'Cancel Game'}</button>
+        ${isTest ? '<button type="button" class="btn btn-ghost btn-block" onclick="window.gameActions.leaveGame()">Leave test game</button>' : ''}
       ` : `
         <p class="waiting">Waiting for host to start...</p>
         <button type="button" class="btn btn-ghost btn-block" onclick="window.gameActions.leaveGame()">Leave</button>

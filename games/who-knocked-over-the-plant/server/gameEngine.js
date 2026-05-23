@@ -8,10 +8,13 @@ import {
   START_SPOTS, SECRET_PASSAGES,
 } from './board.js';
 
+export const TEST_GAME_CODE = 'TEST';
+
 export class GameRoom {
-  constructor(code, hostId) {
+  constructor(code, hostId, { isTest = false } = {}) {
     this.code = code;
     this.hostId = hostId;
+    this.isTest = isTest;
     this.players = new Map(); // socketId -> player
     this.status = 'lobby'; // lobby | playing | ended
     this.solution = null;
@@ -44,6 +47,7 @@ export class GameRoom {
       eliminated: false,
       color: character.color,
     });
+    if (!this.hostId) this.hostId = socketId;
     return { ok: true };
   }
 
@@ -75,11 +79,15 @@ export class GameRoom {
   }
 
   canStart() {
-    return this.players.size >= 2 && this.players.size <= 5 && this.status === 'lobby';
+    if (this.status !== 'lobby') return false;
+    const min = this.isTest ? 1 : 2;
+    return this.players.size >= min && this.players.size <= 5;
   }
 
   start() {
-    if (!this.canStart()) return { error: 'Need 2–5 players to start' };
+    if (!this.canStart()) {
+      return { error: this.isTest ? 'Need 1–5 players to start' : 'Need 2–5 players to start' };
+    }
 
     this.solution = createSolution();
     const deck = buildDeck(this.solution);
@@ -328,7 +336,31 @@ export class GameRoom {
     return { ok: true };
   }
 
+  resetToLobby() {
+    this.status = 'lobby';
+    this.solution = null;
+    this.familyClue = null;
+    this.currentTurnIndex = 0;
+    this.diceRoll = null;
+    this.hasMoved = false;
+    this.hasSuggested = false;
+    this.pendingSuggestion = null;
+    this.lastRoomLeft = null;
+    this.winner = null;
+    this.log = [this.isTest ? '🧪 Test game — pick a character and start solo to try the board.' : ''];
+    for (const p of this.players.values()) {
+      p.hand = [];
+      p.position = null;
+      p.inRoom = null;
+      p.eliminated = false;
+    }
+  }
+
   endGame() {
+    if (this.isTest) {
+      this.resetToLobby();
+      return { ok: true, reset: true };
+    }
     this.status = 'ended';
     this.log.push('The host ended the game.');
     return { ok: true };
@@ -338,6 +370,7 @@ export class GameRoom {
     const current = this.getCurrentPlayer();
     return {
       code: this.code,
+      isTest: this.isTest,
       status: this.status,
       hostId: this.hostId,
       players: this.getPlayerList(),
@@ -385,11 +418,23 @@ export function createGame(hostId) {
   return game;
 }
 
+/** Always-available sandbox game (code TEST) for solo / board testing. */
+export function ensureTestGame() {
+  let game = games.get(TEST_GAME_CODE);
+  if (!game) {
+    game = new GameRoom(TEST_GAME_CODE, null, { isTest: true });
+    game.log = ['🧪 Test game — anyone can join. Start with 1 player to explore the board.'];
+    games.set(TEST_GAME_CODE, game);
+  }
+  return game;
+}
+
 export function getGame(code) {
   return games.get(code?.toUpperCase());
 }
 
 export function removeGame(code) {
+  if (code === TEST_GAME_CODE) return;
   games.delete(code);
 }
 
@@ -398,7 +443,7 @@ function generateUniqueCode() {
   let code;
   do {
     code = Array.from({ length: 4 }, () => chars[Math.floor(Math.random() * chars.length)]).join('');
-  } while (games.has(code));
+  } while (games.has(code) || code === TEST_GAME_CODE);
   return code;
 }
 

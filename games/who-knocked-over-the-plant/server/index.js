@@ -4,7 +4,14 @@ import { Server } from 'socket.io';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 import os from 'os';
-import { createGame, getGame, findGameByPlayer, removeGame } from './gameEngine.js';
+import {
+  createGame,
+  getGame,
+  findGameByPlayer,
+  removeGame,
+  ensureTestGame,
+  TEST_GAME_CODE,
+} from './gameEngine.js';
 import { getCharacter } from './data.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -41,8 +48,27 @@ function broadcastGame(game) {
 }
 
 function destroyGame(game) {
+  if (game.isTest) {
+    game.resetToLobby();
+    broadcastGame(game);
+    return;
+  }
   io.to(game.code).emit('game-ended-by-host');
   removeGame(game.code);
+}
+
+function handleTestDisconnect(game, socketId) {
+  const wasHost = game.hostId === socketId;
+  game.removePlayer(socketId);
+
+  if (game.players.size === 0) {
+    game.resetToLobby();
+    game.hostId = null;
+  } else if (wasHost) {
+    game.hostId = game.getPlayerOrder()[0]?.id ?? null;
+    if (game.status === 'playing') game.resetToLobby();
+  }
+  broadcastGame(game);
 }
 
 function getLocalIp() {
@@ -66,16 +92,38 @@ io.on('connection', (socket) => {
     broadcastGame(game);
   });
 
+  socket.on('peek-lobby', ({ code }, cb) => {
+    const upper = code?.trim()?.toUpperCase();
+    const game = upper === TEST_GAME_CODE ? ensureTestGame() : getGame(upper);
+    if (!game) return cb?.({ error: 'Game not found' });
+    cb?.({
+      ok: true,
+      code: game.code,
+      isTest: game.isTest,
+      status: game.status,
+      hostId: game.hostId,
+      players: game.getPlayerList(),
+    });
+  });
+
   socket.on('join-game', ({ code, characterId }, cb) => {
     if (findGameByPlayer(socket.id)) return cb?.({ error: 'Already in a game' });
-    const game = getGame(code?.trim()?.toUpperCase());
+    const upper = code?.trim()?.toUpperCase();
+    const game = upper === TEST_GAME_CODE ? ensureTestGame() : getGame(upper);
     if (!game) return cb?.({ error: 'Game not found' });
     if (game.status !== 'lobby') return cb?.({ error: 'Game already started' });
     if (game.players.size >= 5) return cb?.({ error: 'Game is full' });
     const added = game.addPlayer(socket.id, characterId);
     if (added?.error) return cb?.(added);
     socket.join(game.code);
-    cb?.({ ok: true, code: game.code, playerId: socket.id, isHost: false, characterId });
+    cb?.({
+      ok: true,
+      code: game.code,
+      playerId: socket.id,
+      isHost: game.hostId === socket.id,
+      characterId,
+      isTest: game.isTest,
+    });
     broadcastGame(game);
   });
 
@@ -119,19 +167,28 @@ io.on('connection', (socket) => {
     const game = findGameByPlayer(socket.id);
     if (!game) return cb?.({ error: 'Not in a game' });
     if (game.hostId !== socket.id) return cb?.({ error: 'Only the host can end the game' });
-    game.endGame();
-    cb?.({ ok: true });
-    destroyGame(game);
+    const result = game.endGame();
+    if (result.error) return cb?.(result);
+    cb?.({ ok: true, reset: !!result.reset });
+    if (game.isTest) {
+      broadcastGame(game);
+    } else {
+      destroyGame(game);
+    }
   });
 
   socket.on('leave-game', (_, cb) => {
     const game = findGameByPlayer(socket.id);
     if (!game) return cb?.({ ok: true });
-    if (game.hostId === socket.id) {
+    if (game.hostId === socket.id && !game.isTest) {
       return cb?.({ error: 'Host must use End Game to close the session' });
     }
-    game.removePlayer(socket.id);
     socket.leave(game.code);
+    if (game.isTest) {
+      handleTestDisconnect(game, socket.id);
+      return cb?.({ ok: true });
+    }
+    game.removePlayer(socket.id);
     cb?.({ ok: true });
     broadcastGame(game);
   });
@@ -197,6 +254,11 @@ io.on('connection', (socket) => {
     const game = findGameByPlayer(socket.id);
     if (!game) return;
 
+    if (game.isTest) {
+      handleTestDisconnect(game, socket.id);
+      return;
+    }
+
     if (game.hostId === socket.id) {
       destroyGame(game);
       return;
@@ -209,11 +271,14 @@ io.on('connection', (socket) => {
   });
 });
 
+ensureTestGame();
+
 const PORT = Number(process.env.PORT) || 3456;
 httpServer.listen(PORT, '0.0.0.0', () => {
   const ip = getLocalIp();
   console.log(`\n🪴 Who Knocked Over the Plant?`);
   console.log(`   Local:   http://localhost:${PORT}`);
   if (ip !== 'localhost') console.log(`   Network: http://${ip}:${PORT}`);
-  console.log(`   Health:  http://localhost:${PORT}/health\n`);
+  console.log(`   Health:  http://localhost:${PORT}/health`);
+  console.log(`   Test:    join code ${TEST_GAME_CODE} (solo play OK)\n`);
 });

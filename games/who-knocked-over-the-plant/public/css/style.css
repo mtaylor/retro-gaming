@@ -69,6 +69,18 @@ body.in-game .game-page { margin: 0 !important; }
 .divider { margin: 1rem 0; color: var(--muted); font-size: 0.85rem; }
 .rules { color: var(--muted); font-size: 0.95rem; }
 .rules p { margin: 0.35rem 0; }
+.test-game-btn { border-color: var(--gold); color: var(--accent2); }
+.test-badge {
+  background: rgba(255, 213, 79, 0.2);
+  border: 1px solid var(--gold);
+  color: var(--gold);
+  padding: 0.4rem 0.65rem;
+  border-radius: 8px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  margin: 0.5rem auto;
+  max-width: 320px;
+}
 
 /* Buttons */
 .btn {
